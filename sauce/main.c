@@ -87,7 +87,7 @@ void loop(void){
 	//end declare vars
 	
 	if(init){ //init vars
-		initline(&vector, .1, .2, .4, .2);
+		initline(&vector, .1, .3, .4, .2);
 		init = false;
 	} //end init vars
 	
