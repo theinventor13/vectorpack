@@ -17,6 +17,9 @@ SDL_Color clearcolor;
 bool init = true;
 
 transform globaltransform;
+double arrowsize = 10.0;
+double dt = 0.0;
+
 
 void loop(void);
 
@@ -72,6 +75,7 @@ int main(int argc, char ** argv){
 			}
 		}
 		//do stuff
+		setdt();
 		loop();
 	}
 	
@@ -93,10 +97,9 @@ void loop(void){
 	
 	//draw
 	clear();
-	linerotate(&vector, .1);
+	linerotate(&vector, pi * dt);
 	setcolor(255,0,0);drawvector(vector, false);
 	flip();
-	delay(60);
 	//end draw
 	
 	return;
@@ -148,8 +151,8 @@ void drawvector(line l, bool dir){ //renders line indicating direction from vert
 	rotatevec2(&left, -(pi/4.0)); 
 	normalizevec2(&right);
 	normalizevec2(&left);
-	scalevec2(&right, 10.0/globaltransform.scale.x, 10.0/globaltransform.scale.x); //set arrowhead sides to be 10 pixels long
-	scalevec2(&left, 10.0/globaltransform.scale.x, 10.0/globaltransform.scale.x); //TODO: make arrowhead size variable
+	scalevec2(&right, arrowsize/globaltransform.scale.x, arrowsize/globaltransform.scale.x); //set arrowhead sides to be "arrowsize" pixels long
+	scalevec2(&left, arrowsize/globaltransform.scale.x, arrowsize/globaltransform.scale.x); //TODO: make arrowhead size variable
 	translatevec2(&right, l.vertex[dir].x, l.vertex[dir].y); //move arrowhead back to selected line vertex
 	translatevec2(&left, l.vertex[dir].x, l.vertex[dir].y);
 	//draw arrowhead
@@ -158,15 +161,23 @@ void drawvector(line l, bool dir){ //renders line indicating direction from vert
 	drawline(temp);
 	temp.vertex[1] = left;
 	drawline(temp);
-	temp.vertex[0] = right;
-	drawline(temp);
 };
 
 //implement drawtriangle 
 
 
-
 //utility
+
+void setdt(void){
+	static Uint32 oldtime;
+	static bool init = true;
+	if(init){
+		oldtime = SDL_GetTicks();
+		init = false;
+	}
+	dt = (double)(SDL_GetTicks() - oldtime) / 1000.0;
+	oldtime = SDL_GetTicks();
+};
 
 void setcolor(Uint8 r, Uint8 g, Uint8 b){
 	SDL_SetRenderDrawColor(renderer, r, g, b, 255);
@@ -176,15 +187,16 @@ void setcolorwithalpha(Uint8 r, Uint8 g, Uint8 b, Uint8 a){
 	SDL_SetRenderDrawColor(renderer, r, g, b, a);
 };
 
+
 void clear(void){
 	setcolorwithalpha(clearcolor.r,clearcolor.g,clearcolor.b,clearcolor.a);
 	SDL_RenderClear(renderer);
-}
+};
 
 void flip(void){
 	SDL_RenderPresent(renderer);
-}
+};
 
 void delay(int s){
 	SDL_Delay(s);
-}
+};
