@@ -17,6 +17,7 @@ SDL_Color clearcolor;
 bool init = true;
 
 transform globaltransform;
+vec2 mouseposition;
 double arrowsize = 10.0;
 double dt = 0.0;
 
@@ -46,8 +47,9 @@ int main(int argc, char ** argv){
 	}
 	
 	clearcolor = (SDL_Color){.r = 255, .g = 255, .b = 255, .a = 255};
+	clear();
 	setglobaltransform();
-	
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	
 	bool quit = false;
 	while(!quit){
@@ -75,6 +77,7 @@ int main(int argc, char ** argv){
 			}
 		}
 		//do stuff
+		updatemouse();
 		setdt();
 		loop();
 	}
@@ -87,19 +90,37 @@ int main(int argc, char ** argv){
 void loop(void){
 	
 	//declare vars
-	static line vector;
+	static line vector1;
+	static line vector2;
+	static line vector3;
+	static line tomouse;
+	static triangle mytri;
 	//end declare vars
 	
 	if(init){ //init vars
-		initline(&vector, .1, .3, .4, .2);
+		setclearcolorwithalpha(255,255,255,255);
+		initline(&tomouse, .0, .0, mouseposition.x, mouseposition.y);
+		initline(&vector1, .0, .0, .0, .3);
+		initline(&vector2, .0, .0, .3, -.3);
+		initline(&vector3, .0, .0, -.3, -.3);
+		inittriangle(&mytri, -.5, -.5, .5, -.5, .0, .5);
 		init = false;
 	} //end init vars
 	
 	//draw
-	clear();
-	linerotate(&vector, pi * dt);
-	setcolor(255,0,0);drawvector(vector, false);
-	flip();
+	clear(); //clear screen in default color
+	setline(&tomouse, .0, .0, mouseposition.x, mouseposition.y);
+	linerotate(&vector1, pi * dt); 
+	linerotate(&vector2, pi * dt);
+	linerotate(&vector3, pi * dt);
+	trianglerotate(&mytri, pi * dt);
+	
+	setcolor(255,0,0);drawvector(vector1, true); 
+	setcolor(0,255,0);drawvector(vector2, true);
+	setcolor(0,0,255);drawvector(vector3, true);
+	setcolor(100,255,0);drawvector(tomouse, true);
+	setcolor(0,0,0);drawtriangle(mytri); 
+	flip(); //blit buffer to screen
 	//end draw
 	
 	return;
@@ -107,11 +128,17 @@ void loop(void){
 
 //render functions
 
+void drawvec2(vec2 v){ //renders pixel
+	applypointtransform(globaltransform, &v);
+	SDL_RenderDrawPoint(renderer, (int)v.x, (int)v.y);
+};
+
 void drawpoint(point p){ //renders pixel
 	applypointtransform(p.localtransform, &p);
 	applypointtransform(globaltransform, &p);
 	SDL_RenderDrawPoint(renderer, (int)p.x, (int)p.y);
 };
+
 
 void drawlinevec2(vec2 v1, vec2 v2){ //renders point line
 	applytransformvec2(globaltransform, &v1);
@@ -151,7 +178,7 @@ void drawvector(line l, bool dir){ //renders line indicating direction from vert
 	rotatevec2(&left, -(pi/4.0)); 
 	normalizevec2(&right);
 	normalizevec2(&left);
-	scalevec2(&right, arrowsize/globaltransform.scale.x, arrowsize/globaltransform.scale.x); //set arrowhead sides to be "arrowsize" pixels long
+	scalevec2(&right, arrowsize/globaltransform.scale.x, arrowsize/globaltransform.scale.x); //scale arrowhead size to "arrowsize" pixels
 	scalevec2(&left, arrowsize/globaltransform.scale.x, arrowsize/globaltransform.scale.x); //TODO: make arrowhead size variable
 	translatevec2(&right, l.vertex[dir].x, l.vertex[dir].y); //move arrowhead back to selected line vertex
 	translatevec2(&left, l.vertex[dir].x, l.vertex[dir].y);
@@ -163,11 +190,40 @@ void drawvector(line l, bool dir){ //renders line indicating direction from vert
 	drawline(temp);
 };
 
-//implement drawtriangle 
+void drawtriangle(triangle t){
+	line temp;
+	temp.localtransform = t.localtransform;
+	temp.vertex[0].x = t.vertex[0].x;
+	temp.vertex[0].y = t.vertex[0].y;
+	temp.vertex[1].x = t.vertex[1].x;
+	temp.vertex[1].y = t.vertex[1].y;
+	drawline(temp);
+	temp.vertex[0].x = t.vertex[1].x;
+	temp.vertex[0].y = t.vertex[1].y;
+	temp.vertex[1].x = t.vertex[2].x;
+	temp.vertex[1].y = t.vertex[2].y;
+	drawline(temp);
+	temp.vertex[0].x = t.vertex[2].x;
+	temp.vertex[0].y = t.vertex[2].y;
+	temp.vertex[1].x = t.vertex[0].x;
+	temp.vertex[1].y = t.vertex[0].y;
+	drawline(temp);
+}
+
 
 
 //utility
 
+void updatemouse(void){
+	int dx;
+	int dy;
+	SDL_GetMouseState(&dx, &dy);
+	mouseposition.x = (double) dx;
+	mouseposition.y = (double) dy;
+	translatevec2(&mouseposition, -globaltransform.translate.x, -globaltransform.translate.y);
+	scalevec2(&mouseposition, 1.0/globaltransform.scale.x, 1.0/globaltransform.scale.y);
+	printf("%g %g\n", mouseposition.x,mouseposition.y);
+}
 void setdt(void){
 	static Uint32 oldtime;
 	static bool init = true;
@@ -187,10 +243,33 @@ void setcolorwithalpha(Uint8 r, Uint8 g, Uint8 b, Uint8 a){
 	SDL_SetRenderDrawColor(renderer, r, g, b, a);
 };
 
+void setclearcolor(Uint8 r, Uint8 g, Uint8 b){
+	clearcolor.r = r;
+	clearcolor.g = g;
+	clearcolor.b = b;
+	clearcolor.a = 255;
+};
+
+void setclearcolorwithalpha(Uint8 r, Uint8 g, Uint8 b, Uint8 a){
+	clearcolor.r = r;
+	clearcolor.g = g;
+	clearcolor.b = b;
+	clearcolor.a = a;
+};
+
 
 void clear(void){
-	setcolorwithalpha(clearcolor.r,clearcolor.g,clearcolor.b,clearcolor.a);
-	SDL_RenderClear(renderer);
+	static SDL_Rect temp;
+	if(clearcolor.a == 255){
+		setcolor(clearcolor.r,clearcolor.g,clearcolor.b);
+		SDL_RenderClear(renderer);
+	}else{
+		temp.x = temp.y = 0;
+		temp.w = screenwidth;
+		temp.h = screenheight;
+		setcolorwithalpha(clearcolor.r,clearcolor.g,clearcolor.b,clearcolor.a);
+		SDL_RenderFillRect(renderer, &temp);
+	}
 };
 
 void flip(void){

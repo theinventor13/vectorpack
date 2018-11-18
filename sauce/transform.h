@@ -7,6 +7,25 @@ extern int halfscreenheight;
 #define defaulttransform  1.0, 1.0, 0.0, 0.0, 0.0
 #define pi 3.1415926535
 
+// # = datatype (vec, point, tri, mesh) 
+// ! = transformation (scale, rotate, translate, normalize)
+
+// set! functions overwrite transform
+
+//    ! functions transform transform
+
+//init# functions overwrite datatype position values
+//      and overwrite local transform with default
+
+// set# functions overwrite datatype position values
+
+//set#! functions overwrite datatype local transform
+
+//   !# functions transform datatype position values
+
+//   #! functions transform datatype local transform
+
+
 //miscellaneous
 
 void setglobaltransform(void){
@@ -29,6 +48,7 @@ double wraprotate(double a){
 		return a;
 	}
 }
+
 
 //general transform functions
 
@@ -61,6 +81,7 @@ void rotate(transform * t, double a){
 	t->rotate += a;
 	t->rotate = wraprotate(t->rotate);
 }
+
 
 //vec2 transform functions
 
@@ -110,8 +131,7 @@ void setpoint(point * p, double x, double y){
 }
 
 void initpoint(point * p, double x, double y){
-	p->x = x;
-	p->y = y;
+	setpoint(p, x, y);
 	setpointtransform(p, defaulttransform);
 }
 
@@ -162,6 +182,29 @@ void pointrotate(point * p, double a){
 	p->localtransform.rotate = wraprotate(p->localtransform.rotate);
 }
 
+void scalepoint(point * p, double dx, double dy){
+	p->x *= dx;
+	p->y *= dy;
+}
+
+void translatepoint(point * p, double dx, double dy){
+	p->x += dx;
+	p->y += dy;
+}
+
+void rotatepoint(point * p, double a){
+	double newx = cos(a) * p->x - sin(a) * p->y;
+	double newy = sin(a) * p->x + cos(a) * p->y;
+	p->x = newx;
+	p->y = newy;
+}
+
+void normalizepoint(point * p){
+	double mag = sqrt(p->x * p->x + p->y * p->y);
+	p->x /= mag;
+	p->y /= mag;
+}
+
 
 //line transform functions
 
@@ -173,10 +216,7 @@ void setline(line * l, double x1, double y1, double x2, double y2){
 }
 
 void initline(line * l, double x1, double y1, double x2, double y2){
-	l->vertex[0].x = x1;
-	l->vertex[0].y = y1;
-	l->vertex[1].x = x2;
-	l->vertex[1].y = y2;
+	setline(l, x1, y1, x2, y2);
 	setlinetransform(l, defaulttransform);
 }
 
@@ -225,13 +265,161 @@ void linerotate(line * l, double a){
 	l->localtransform.rotate = wraprotate(l->localtransform.rotate);
 }
 
+void scaleline(line * l, double dx, double dy){
+	l->vertex[0].x *= dx;
+	l->vertex[0].y *= dy;
+	l->vertex[1].x *= dx;
+	l->vertex[1].y *= dy;
+}
+
+void translateline(line * l, double dx, double dy){
+	l->vertex[0].x += dx;
+	l->vertex[0].y += dy;
+	l->vertex[1].x += dx;
+	l->vertex[1].y += dy;
+}
+
+void rotateline(line * l, double a){
+	double newx = cos(a) * l->vertex[0].x - sin(a) * l->vertex[0].y;
+	double newy = sin(a) * l->vertex[0].x + cos(a) * l->vertex[0].y;
+	l->vertex[0].x = newx;
+	l->vertex[0].y = newy;
+	newx = cos(a) * l->vertex[1].x - sin(a) * l->vertex[1].y;
+	newy = sin(a) * l->vertex[1].x + cos(a) * l->vertex[1].y;
+	l->vertex[1].x = newx;
+	l->vertex[1].y = newy;
+}
+
+void normalizeline(line * l){
+	double mag = sqrt(l->vertex[0].x * l->vertex[0].x + l->vertex[0].y * l->vertex[0].y);
+	l->vertex[0].x /= mag;
+	l->vertex[0].y /= mag;
+	mag = sqrt(l->vertex[1].x * l->vertex[1].x + l->vertex[1].y * l->vertex[1].y);
+	l->vertex[1].x /= mag;
+	l->vertex[1].y /= mag;
+}
+
+
 //triangle transform functions
 
-//TODO: implement
+void settriangle(triangle * tri, double x1, double y1, double x2, double y2, double x3, double y3){
+	tri->vertex[0].x = x1;
+	tri->vertex[0].y = y1;
+	tri->vertex[1].x = x2;
+	tri->vertex[1].y = y2;
+	tri->vertex[2].x = x3;
+	tri->vertex[2].y = y3;
+}
 
+void inittriangle(triangle * tri, double x1, double y1, double x2, double y2, double x3, double y3){
+	settriangle(tri, x1, y1, x2, y2, x3, y3);
+	settriangletransform(tri, defaulttransform);
+}
 
+void settriangletransform(triangle * tri, double sx, double sy, double a, double tx, double ty){
+	tri->localtransform.scale.x = sx;
+	tri->localtransform.scale.y = sy;
+	tri->localtransform.rotate = wraprotate(a);
+	tri->localtransform.translate.x = tx;
+	tri->localtransform.translate.y = ty;
+}
 
+void applytriangletransform(transform t, triangle * tri){
+	tri->vertex[0].x *= t.scale.x;
+	tri->vertex[0].y *= t.scale.y;
+	double newx = cos(t.rotate) * tri->vertex[0].x - sin(t.rotate) * tri->vertex[0].y;
+	double newy = sin(t.rotate) * tri->vertex[0].x + cos(t.rotate) * tri->vertex[0].y;
+	tri->vertex[0].x = newx + t.translate.x;
+	tri->vertex[0].y = newy + t.translate.y;
+	
+	tri->vertex[1].x *= t.scale.x;
+	tri->vertex[1].y *= t.scale.y;
+	newx = cos(t.rotate) * tri->vertex[1].x - sin(t.rotate) * tri->vertex[1].y;
+	newy = sin(t.rotate) * tri->vertex[1].x + cos(t.rotate) * tri->vertex[1].y;
+	tri->vertex[1].x = newx + t.translate.x;
+	tri->vertex[1].y = newy + t.translate.y;
+	
+	tri->vertex[2].x *= t.scale.x;
+	tri->vertex[2].y *= t.scale.y;
+	newx = cos(t.rotate) * tri->vertex[2].x - sin(t.rotate) * tri->vertex[2].y;
+	newy = sin(t.rotate) * tri->vertex[2].x + cos(t.rotate) * tri->vertex[2].y;
+	tri->vertex[2].x = newx + t.translate.x;
+	tri->vertex[2].y = newy + t.translate.y;
+}
 
+void settrianglescale(triangle * tri, double dx, double dy){
+	tri->localtransform.scale.x = dx;
+	tri->localtransform.scale.y = dy;
+}
+
+void trianglescale(triangle * tri, double dx, double dy){
+	tri->localtransform.scale.x *= dx;
+	tri->localtransform.scale.y *= dy;
+}
+
+void settriangletranslate(triangle * tri, double dx, double dy){
+	tri->localtransform.translate.x = dx;
+	tri->localtransform.translate.y = dy;
+}
+
+void triangletranslate(triangle * tri, double dx, double dy){
+	tri->localtransform.translate.x += dx;
+	tri->localtransform.translate.y += dy;
+}
+
+void settrianglerotate(triangle * tri, double a){
+	tri->localtransform.rotate = wraprotate(a);
+}
+
+void trianglerotate(triangle * tri, double a){
+	tri->localtransform.rotate += a;
+	tri->localtransform.rotate = wraprotate(tri->localtransform.rotate);
+}
+
+void scaletriangle(triangle * tri, double dx, double dy){
+	tri->vertex[0].x *= dx;
+	tri->vertex[0].y *= dy;
+	tri->vertex[1].x *= dx;
+	tri->vertex[1].y *= dy;
+	tri->vertex[2].x *= dx;
+	tri->vertex[2].y *= dy;
+}
+
+void translatetriangle(triangle * tri, double dx, double dy){
+	tri->vertex[0].x += dx;
+	tri->vertex[0].y += dy;
+	tri->vertex[1].x += dx;
+	tri->vertex[1].y += dy;
+	tri->vertex[2].x += dx;
+	tri->vertex[2].y += dy;
+}
+
+void rotatetriangle(triangle * tri, double a){
+	double newx = cos(a) * tri->vertex[0].x - sin(a) * tri->vertex[0].y;
+	double newy = sin(a) * tri->vertex[0].x + cos(a) * tri->vertex[0].y;
+	tri->vertex[0].x = newx;
+	tri->vertex[0].y = newy;
+	newx = cos(a) * tri->vertex[1].x - sin(a) * tri->vertex[1].y;
+	newy = sin(a) * tri->vertex[1].x + cos(a) * tri->vertex[1].y;
+	tri->vertex[1].x = newx;
+	tri->vertex[1].y = newy;
+	newx = cos(a) * tri->vertex[2].x - sin(a) * tri->vertex[2].y;
+	newy = sin(a) * tri->vertex[2].x + cos(a) * tri->vertex[2].y;
+	tri->vertex[2].x = newx;
+	tri->vertex[2].y = newy;
+}
+
+void normalizetriangle(triangle * tri){
+	double mag = sqrt(tri->vertex[0].x * tri->vertex[0].x + tri->vertex[0].y * tri->vertex[0].y);
+	tri->vertex[0].x /= mag;
+	tri->vertex[0].y /= mag;
+	mag = sqrt(tri->vertex[1].x * tri->vertex[1].x + tri->vertex[1].y * tri->vertex[1].y);
+	tri->vertex[1].x /= mag;
+	tri->vertex[1].y /= mag;
+	mag = sqrt(tri->vertex[2].x * tri->vertex[2].x + tri->vertex[2].y * tri->vertex[2].y);
+	tri->vertex[2].x /= mag;
+	tri->vertex[2].y /= mag;
+}
 
 
 
