@@ -222,7 +222,6 @@ void updatemouse(void){
 	mouseposition.y = (double) dy;
 	translatevec2(&mouseposition, -globaltransform.translate.x, -globaltransform.translate.y);
 	scalevec2(&mouseposition, 1.0/globaltransform.scale.x, 1.0/globaltransform.scale.y);
-	printf("%g %g\n", mouseposition.x,mouseposition.y);
 }
 void setdt(void){
 	static Uint32 oldtime;
