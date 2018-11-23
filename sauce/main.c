@@ -5,7 +5,8 @@
 #include "transform.h"
 #define defaulttransform  1.0, 1.0, 0.0, 0.0, 0.0
 #define pi 3.1415926535
-
+#define defaultscreenwidth 640
+#define defaultscreenheight 480
 int screenwidth = 640;
 int screenheight = 480;
 int halfscreenwidth = 320;
@@ -14,12 +15,14 @@ SDL_Window * window;
 SDL_Renderer * renderer;
 SDL_Event event;
 SDL_Color clearcolor;
-bool init = true;
 
 transform globaltransform;
 vec2 mouseposition;
 double arrowsize = 10.0;
 double dt = 0.0;
+double screenratio = (double)defaultscreenwidth / (double)defaultscreenheight;
+bool init = true;
+bool screenchanged = false;
 
 
 void loop(void);
@@ -70,6 +73,7 @@ int main(int argc, char ** argv){
 						halfscreenwidth = screenwidth / 2; 
 						halfscreenheight = screenheight / 2;
 						setglobaltransform();
+						screenchanged = true;
 						break;
 					default:
 						break;
@@ -80,6 +84,8 @@ int main(int argc, char ** argv){
 		updatemouse();
 		setdt();
 		loop();
+		init = false;
+		screenchanged = false;
 	}
 	
 	return 0;
@@ -90,41 +96,36 @@ int main(int argc, char ** argv){
 void loop(void){
 	
 	//declare vars
-	static line vector1;
-	static line vector2;
-	static line vector3;
-	static line tomouse;
-	static triangle mytri;
+	static vec2 p1;
+	static vec2 p2;
+	static int times = 0;
 	//end declare vars
 	
 	if(init){ //init vars
-		setclearcolorwithalpha(255,255,255,255);
-		initline(&tomouse, .0, .0, mouseposition.x, mouseposition.y);
-		initline(&vector1, .0, .0, .0, .3);
-		initline(&vector2, .0, .0, .3, -.3);
-		initline(&vector3, .0, .0, -.3, -.3);
-		inittriangle(&mytri, -.5, -.5, .5, -.5, .0, .5);
-		init = false;
+		clear(); 
+		setvec2(&p1, -1.0, -1.0);
+		setvec2(&p2, -1.0, 1.0);
 	} //end init vars
 	
 	//draw
-	clear(); //clear screen in default color
-	setline(&tomouse, .0, .0, mouseposition.x, mouseposition.y);
-	linerotate(&vector1, pi * dt); 
-	linerotate(&vector2, pi * dt);
-	linerotate(&vector3, pi * dt);
-	trianglerotate(&mytri, pi * dt);
 	
-	setcolor(255,0,0);drawvector(vector1, true); 
-	setcolor(0,255,0);drawvector(vector2, true);
-	setcolor(0,0,255);drawvector(vector3, true);
-	setcolor(100,255,0);drawvector(tomouse, true);
-	setcolor(0,0,0);drawtriangle(mytri); 
-	flip(); //blit buffer to screen
+	while(times < 1000){
+		setcolor(255,0,0);drawlinevec2(p1,p2);
+		p1.y += ((mouseposition.x + 1.0) / 2.0);
+		p2.x += ((mouseposition.y + 1.0) / 2.0 * screenratio);
+		times++;
+	}
+	
+	flip();
+	clear();
+	times = 0;
+	p1.y = p2.x = -1.0;
+	
 	//end draw
 	
 	return;
 }
+
 
 //render functions
 
@@ -211,7 +212,6 @@ void drawtriangle(triangle t){
 }
 
 
-
 //utility
 
 void updatemouse(void){
@@ -222,7 +222,8 @@ void updatemouse(void){
 	mouseposition.y = (double) dy;
 	translatevec2(&mouseposition, -globaltransform.translate.x, -globaltransform.translate.y);
 	scalevec2(&mouseposition, 1.0/globaltransform.scale.x, 1.0/globaltransform.scale.y);
-}
+};
+
 void setdt(void){
 	static Uint32 oldtime;
 	static bool init = true;

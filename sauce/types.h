@@ -57,25 +57,25 @@ typedef struct{ //3d transform
 }transform3d;
 
 typedef struct{ //3d vector with transform
-	transform3d localtransform;
+	transform localtransform;
 	double x;
 	double y;
 	double z;
 }point3d;
 
 typedef struct{ //triangle with 3d vertices
-	transform3d localtransform;
+	transform localtransform;
 	vec3 vertex[3];
 }triangle3d;
 
 typedef struct{ //3d mesh
-	transform3d localtransform;
+	transform localtransform;
 	vec3 * vertex;
 	link * edge;
 }mesh3d;
 
 typedef struct{ //3d mesh with texture coordinates
-	transform3d localtransform;
+	transform localtransform;
 	vec3 * vertex;
 	vec3 * uv;
 	link * edge;
