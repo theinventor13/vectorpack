@@ -50,12 +50,6 @@ typedef struct{ //2d mesh with texture coordinates
 	link * edge;
 }uvmesh;
 
-typedef struct{ //3d vector
-	double x;
-	double y;
-	double z;
-}vec3;
-
 typedef struct{ //3d transform
 	vec3 rotate;
 	vec3 scale;

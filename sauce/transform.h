@@ -49,6 +49,12 @@ double wraprotate(double a){
 	}
 }
 
+void swapvec2(vec2 * v1, vec2 * v2){
+	vec2 temp;
+	temp = *v1;
+	*v1 = *v2;
+	*v2 = temp;
+}
 
 //general transform functions
 

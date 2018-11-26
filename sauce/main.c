@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 #include <SDL2\SDL.h>
 #include "types.h"
 #include "transform.h"
@@ -21,11 +22,36 @@ vec2 mouseposition;
 double arrowsize = 10.0;
 double dt = 0.0;
 double screenratio = (double)defaultscreenwidth / (double)defaultscreenheight;
+bool disableglobal = false;
+bool disablelocal = false;
 bool init = true;
 bool screenchanged = false;
 
 
-void loop(void);
+#include "loop.h"
+void loop(void){
+	
+	//declare vars
+	static triangle mytri;
+	//end declare vars
+	
+	if(init){ //init vars
+		inittriangle(&mytri, .0, -.5, -.5, .5, .5, .5);
+		settrianglescale(&mytri, .4, .4);
+		settriangletranslate(&mytri, .3, .3);
+	} //end init vars
+	
+	//draw
+	clear();
+	trianglerotate(&mytri, dt * 1.5 * pi);
+	rotate(&globaltransform, dt * .5 * pi);
+	setcolor(255,0,0);drawfilledtriangle(mytri);
+	//setcolor(0,255,0);drawtriangle(mytri);
+	flip();
+	//end draw
+	
+	return;
+}
 
 void drawpoint(point p);
 
@@ -93,73 +119,57 @@ int main(int argc, char ** argv){
 
 //main loop
 
-void loop(void){
-	
-	//declare vars
-	static vec2 p1;
-	static vec2 p2;
-	static int times = 0;
-	//end declare vars
-	
-	if(init){ //init vars
-		clear(); 
-		setvec2(&p1, -1.0, -1.0);
-		setvec2(&p2, -1.0, 1.0);
-	} //end init vars
-	
-	//draw
-	
-	while(times < 1000){
-		setcolor(255,0,0);drawlinevec2(p1,p2);
-		p1.y += ((mouseposition.x + 1.0) / 2.0);
-		p2.x += ((mouseposition.y + 1.0) / 2.0 * screenratio);
-		times++;
-	}
-	
-	flip();
-	clear();
-	times = 0;
-	p1.y = p2.x = -1.0;
-	
-	//end draw
-	
-	return;
-}
-
 
 //render functions
 
 void drawvec2(vec2 v){ //renders pixel
-	applypointtransform(globaltransform, &v);
+	if(!disableglobal){
+		applypointtransform(globaltransform, &v);
+	}	
 	SDL_RenderDrawPoint(renderer, (int)v.x, (int)v.y);
 };
 
 void drawpoint(point p){ //renders pixel
-	applypointtransform(p.localtransform, &p);
-	applypointtransform(globaltransform, &p);
+	if(!disablelocal){
+		applypointtransform(p.localtransform, &p);
+	}
+	if(!disableglobal){
+		applypointtransform(globaltransform, &p);
+	}
 	SDL_RenderDrawPoint(renderer, (int)p.x, (int)p.y);
 };
 
 
 void drawlinevec2(vec2 v1, vec2 v2){ //renders point line
-	applytransformvec2(globaltransform, &v1);
-	applytransformvec2(globaltransform, &v2);
+	if(!disableglobal){
+		applytransformvec2(globaltransform, &v1);
+		applytransformvec2(globaltransform, &v2);
+	}
 	SDL_RenderDrawLine(renderer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y);
 };
 
 void drawpointline(point p1, point p2){ //renders point line
-	applypointtransform(p1.localtransform, &p1);
-	applypointtransform(globaltransform, &p1);
-	applypointtransform(p2.localtransform, &p2);
-	applypointtransform(globaltransform, &p2);
+	if(!disablelocal){
+		applypointtransform(p1.localtransform, &p1);
+		applypointtransform(p2.localtransform, &p2);
+	}	
+	if(!disableglobal){
+		applypointtransform(globaltransform, &p1);
+		applypointtransform(globaltransform, &p2);
+	}
 	SDL_RenderDrawLine(renderer, (int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y);
 };
 
 void drawline(line l){ //renders line
-	applytransformvec2(l.localtransform, &(l.vertex[0]));
-	applytransformvec2(globaltransform, &(l.vertex[0]));
-	applytransformvec2(l.localtransform, &(l.vertex[1]));
-	applytransformvec2(globaltransform, &(l.vertex[1]));
+	if(!disablelocal){
+		applytransformvec2(l.localtransform, &(l.vertex[0]));
+		applytransformvec2(l.localtransform, &(l.vertex[1]));
+	}
+	if(!disableglobal){
+		applytransformvec2(globaltransform, &(l.vertex[0]));
+		applytransformvec2(globaltransform, &(l.vertex[1]));
+	}
+	//printf("(%f, %f) -> (%f, %f)\n", l.vertex[0].x, l.vertex[0].y, l.vertex[1].x, l.vertex[1].y);
 	SDL_RenderDrawLine(renderer, (int)l.vertex[0].x, (int)l.vertex[0].y, (int)l.vertex[1].x, (int)l.vertex[1].y);
 };
 
@@ -211,6 +221,57 @@ void drawtriangle(triangle t){
 	drawline(temp);
 }
 
+void drawfilledtriangle(triangle t){
+	//pretransform triangle verts to avoid problems
+	applytriangletransform(t.localtransform, &t);
+	applytriangletransform(globaltransform, &t);
+	
+	//sort points by y;
+	if(t.vertex[1].y < t.vertex[0].y){swapvec2(&(t.vertex[0]), &(t.vertex[1]));}
+	if(t.vertex[2].y < t.vertex[1].y){swapvec2(&(t.vertex[1]), &(t.vertex[2]));}
+	if(t.vertex[1].y < t.vertex[0].y){swapvec2(&(t.vertex[0]), &(t.vertex[1]));}
+	
+	//get line slopes
+	t.vertex[0].y = round(t.vertex[0].y);
+	t.vertex[0].x = round(t.vertex[0].x);
+	t.vertex[1].y = round(t.vertex[1].y);
+	t.vertex[1].x = round(t.vertex[1].x);
+	t.vertex[2].y = round(t.vertex[2].y);
+	t.vertex[2].x = round(t.vertex[2].x);
+	
+	double v0tov2 = (t.vertex[2].x - t.vertex[0].x) / (t.vertex[2].y - t.vertex[0].y);
+	double v0tov1 = (t.vertex[1].x - t.vertex[0].x) / (t.vertex[1].y - t.vertex[0].y);
+	double v1tov2 = (t.vertex[2].x - t.vertex[1].x) / (t.vertex[2].y - t.vertex[1].y);
+	
+	//loop vars
+	bool switchslope = false;
+	line temp;
+	temp.vertex[0].x = temp.vertex[1].x = t.vertex[0].x; //set line vert x's equal to top point x
+	disablelocal = true;
+	disableglobal = true;
+	for(temp.vertex[0].y = temp.vertex[1].y = t.vertex[0].y;	//set line vert y's equal to top point y
+		temp.vertex[0].y < t.vertex[2].y; 						//iterate while we havent passed the bottom of the triangle
+		temp.vertex[0].y++, 									//step down a pixel at a time
+		temp.vertex[1].y = temp.vertex[0].y){					//scanline is horizontal, set the y's equal
+		
+		if(temp.vertex[0].y < t.vertex[1].y){ 
+			temp.vertex[0].x += v0tov1;
+			temp.vertex[1].x += v0tov2;	
+		}else{
+			if(!switchslope){ //this needs to be here or else there will be slop left from the top half slope
+				temp.vertex[0].x = t.vertex[1].x;
+				switchslope = true;
+			}else{ //just remove else and brackets to observe the effect
+				temp.vertex[0].x += v1tov2;	
+				temp.vertex[1].x += v0tov2;
+			}
+		}
+		drawline(temp);
+	}
+	disableglobal = false;
+	disablelocal = false;
+	
+}
 
 //utility
 
@@ -250,26 +311,11 @@ void setclearcolor(Uint8 r, Uint8 g, Uint8 b){
 	clearcolor.a = 255;
 };
 
-void setclearcolorwithalpha(Uint8 r, Uint8 g, Uint8 b, Uint8 a){
-	clearcolor.r = r;
-	clearcolor.g = g;
-	clearcolor.b = b;
-	clearcolor.a = a;
-};
-
 
 void clear(void){
 	static SDL_Rect temp;
-	if(clearcolor.a == 255){
-		setcolor(clearcolor.r,clearcolor.g,clearcolor.b);
-		SDL_RenderClear(renderer);
-	}else{
-		temp.x = temp.y = 0;
-		temp.w = screenwidth;
-		temp.h = screenheight;
-		setcolorwithalpha(clearcolor.r,clearcolor.g,clearcolor.b,clearcolor.a);
-		SDL_RenderFillRect(renderer, &temp);
-	}
+	setcolor(clearcolor.r,clearcolor.g,clearcolor.b);
+	SDL_RenderClear(renderer);
 };
 
 void flip(void){
