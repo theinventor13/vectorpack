@@ -427,9 +427,99 @@ void normalizetriangle(triangle * tri){
 	tri->vertex[2].y /= mag;
 }
 
+//mesh transform functions
 
+void setmesh(mesh * m, vec2 * v, link * l, size_t vc, size_t ec){
+	m->vertex = v;
+	m->edge = l;
+	m->vertexcount = vc;
+	m->edgecount = ec;
+}
 
+void initmesh(mesh * m, vec2 * v, link * l, size_t vc, size_t ec){
+	setmesh(m, v, l, vc, ec);
+	setmeshtransform(m, defaulttransform);
+}
 
+void setmeshtransform(mesh * m, double sx, double sy, double a, double tx, double ty){
+	m->localtransform.scale.x = sx;
+	m->localtransform.scale.y = sy;
+	m->localtransform.rotate = wraprotate(a);
+	m->localtransform.translate.x = tx;
+	m->localtransform.translate.y = ty;
+}
 
+void applymeshtransform(transform t, mesh * m){
+	
+	for(size_t iter; iter < m->vertexcount; iter++){
+		m->vertex[iter].x *= t.scale.x;
+		m->vertex[iter].y *= t.scale.y;
+		double newx = cos(t.rotate) * m->vertex[iter].x - sin(t.rotate) * m->vertex[iter].y;
+		double newy = sin(t.rotate) * m->vertex[iter].x + cos(t.rotate) * m->vertex[iter].y;
+		m->vertex[iter].x = newx + t.translate.x;
+		m->vertex[iter].y = newy + t.translate.y;
+	}
+	
+}
 
+void setmeshscale(mesh * m, double dx, double dy){
+	m->localtransform.scale.x = dx;
+	m->localtransform.scale.y = dy;
+}
 
+void meshscale(mesh * m, double dx, double dy){
+	m->localtransform.scale.x *= dx;
+	m->localtransform.scale.y *= dy;
+}
+
+void setmeshtranslate(mesh * m, double dx, double dy){
+	m->localtransform.translate.x = dx;
+	m->localtransform.translate.y = dy;
+}
+
+void meshtranslate(mesh * m, double dx, double dy){
+	m->localtransform.translate.x += dx;
+	m->localtransform.translate.y += dy;
+}
+
+void setmeshrotate(mesh * m, double a){
+	m->localtransform.rotate = wraprotate(a);
+}
+
+void meshrotate(mesh * m, double a){
+	m->localtransform.rotate += a;
+	m->localtransform.rotate = wraprotate(m->localtransform.rotate);
+}
+
+void translatemesh(mesh * m, double dx, double dy){
+	for(int iter = 0; iter < m->vertexcount; iter++){
+		m->vertex[iter].x += dx;
+		m->vertex[iter].y += dy;
+	}
+}
+
+void scalemesh(mesh * m, double dx, double dy){
+	for(int iter = 0; iter < m->vertexcount; iter++){
+		m->vertex[iter].x *= dx;
+		m->vertex[iter].y *= dy;
+	}
+}
+
+void rotatemesh(mesh * m, double a){
+	for(int iter = 0; iter < m->vertexcount; iter++){
+		double newx = cos(a) * m->vertex[iter].x - sin(a) * m->vertex[iter].y;
+		double newy = sin(a) * m->vertex[iter].x + cos(a) * m->vertex[iter].y;
+		m->vertex[iter].x = newx;
+		m->vertex[iter].y = newy;
+	}
+}
+
+void normalizemesh(mesh * m){
+	for(int iter = 0; iter < m->vertexcount; iter++){
+		double mag = sqrt(m->vertex[iter].x * m->vertex[iter].x + m->vertex[iter].y * m->vertex[iter].y);
+		m->vertex[iter].x /= mag;
+		m->vertex[iter].y /= mag;
+	}
+}
+
+	

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
 #include <SDL2\SDL.h>
@@ -33,12 +34,26 @@ void loop(void){
 	
 	//declare vars
 	static triangle mytri;
+	static mesh mymesh;
+	static size_t mappoints = 1000;
+	static size_t listedges = 1000;
+	static vec2 pointmap[1000];
+	static link edgelist[1000];
 	//end declare vars
 	
 	if(init){ //init vars
+		setclearcolor(0,0,0);
+		srand(time(0));
 		inittriangle(&mytri, .0, -.5, -.5, .5, .5, .5);
 		settrianglescale(&mytri, .4, .4);
 		settriangletranslate(&mytri, .3, .3);
+		for(int iter = 0; iter < mappoints; iter++){
+			pointmap[iter].x = (double)((rand() % 20000) - 10000) / 10000.0;
+			pointmap[iter].y = (double)((rand() % 20000) - 10000) / 10000.0;
+			edgelist[iter].v1 = rand() % mappoints;
+			edgelist[iter].v2 = rand() % mappoints;
+		}
+		initmesh(&mymesh, pointmap, edgelist, mappoints, listedges);
 	} //end init vars
 	
 	//draw
@@ -46,7 +61,8 @@ void loop(void){
 	trianglerotate(&mytri, dt * 1.5 * pi);
 	rotate(&globaltransform, dt * .5 * pi);
 	setcolor(255,0,0);drawfilledtriangle(mytri);
-	//setcolor(0,255,0);drawtriangle(mytri);
+	setcolor(255,255,0);drawlinemesh(mymesh);
+	setcolor(0,0,0);drawpointmesh(mymesh);
 	flip();
 	//end draw
 	
@@ -270,7 +286,36 @@ void drawfilledtriangle(triangle t){
 	}
 	disableglobal = false;
 	disablelocal = false;
-	
+}
+
+void drawlinemesh(mesh m){
+	line temp;
+	setlinetransform(&temp, m.localtransform.scale.x, 
+							m.localtransform.scale.y, 
+							m.localtransform.rotate, 
+							m.localtransform.translate.x, 
+							m.localtransform.translate.x);
+							
+	for(int iter = 0; iter < m.edgecount; iter++){
+		temp.vertex[0] = m.vertex[m.edge[iter].v1];
+		temp.vertex[1] = m.vertex[m.edge[iter].v2];
+		drawline(temp);
+	}
+}
+
+void drawpointmesh(mesh m){
+	point temp;
+	setpointtransform(&temp, m.localtransform.scale.x, 
+							 m.localtransform.scale.y, 
+							 m.localtransform.rotate, 
+							 m.localtransform.translate.x, 
+							 m.localtransform.translate.x);
+							
+	for(int iter = 0; iter < m.vertexcount; iter++){
+		temp.x = m.vertex[iter].x;
+		temp.y = m.vertex[iter].y;
+		drawpoint(temp);
+	}
 }
 
 //utility

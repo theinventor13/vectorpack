@@ -1,19 +1,13 @@
 
 typedef struct{ //represent edge by pair of vertex indices
-	int x;
-	int y;
+	int v1;
+	int v2;
 }link;
 
 typedef struct{ //2d vector
 	double x;
 	double y;
 }vec2;
-
-typedef struct{ //2d vector
-	double x;
-	double y;
-	double z;
-}vec3;
 
 typedef struct{ //2d transformation
 	double rotate;
@@ -41,6 +35,8 @@ typedef struct{ //2d mesh
 	transform localtransform;
 	vec2 * vertex;
 	link * edge;
+	size_t vertexcount;
+	size_t edgecount;
 }mesh;
 
 typedef struct{ //2d mesh with texture coordinates
@@ -48,7 +44,15 @@ typedef struct{ //2d mesh with texture coordinates
 	vec2 * vertex;
 	vec2 * uv;
 	link * edge;
+	size_t vertexcount;
+	size_t edgecount;
 }uvmesh;
+
+typedef struct{ //2d vector
+	double x;
+	double y;
+	double z;
+}vec3;
 
 typedef struct{ //3d transform
 	vec3 rotate;
@@ -77,6 +81,8 @@ typedef struct{ //3d mesh
 	transform3d localtransform;
 	vec3 * vertex;
 	link * edge;
+	size_t vertexcount;
+	size_t edgecount;
 }mesh3d;
 
 typedef struct{ //3d mesh with texture coordinates
@@ -84,4 +90,6 @@ typedef struct{ //3d mesh with texture coordinates
 	vec3 * vertex;
 	vec3 * uv;
 	link * edge;
+	size_t vertexcount;
+	size_t edgecount;
 }uvmesh3d;
