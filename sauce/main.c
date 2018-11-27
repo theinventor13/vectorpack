@@ -37,16 +37,14 @@ void loop(void){
 	
 	if(init){ //init vars
 		inittriangle(&mytri, .0, -.5, -.5, .5, .5, .5);
-		settrianglescale(&mytri, .4, .4);
-		settriangletranslate(&mytri, .3, .3);
+		normalizetriangle(&mytri);
 	} //end init vars
 	
 	//draw
 	clear();
-	trianglerotate(&mytri, dt * 1.5 * pi);
-	rotate(&globaltransform, dt * .5 * pi);
-	setcolor(255,0,0);drawfilledtriangle(mytri);
-	//setcolor(0,255,0);drawtriangle(mytri);
+	trianglerotate(&mytri, dt * .2);
+	setcolor(0,255,255);drawfilledtriangle(mytri);
+	setcolor(255,0,0);drawtriangle(mytri);
 	flip();
 	//end draw
 	
