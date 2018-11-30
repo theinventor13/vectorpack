@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 #include <math.h>
 #include <SDL2\SDL.h>
 #include "types.h"
@@ -33,36 +34,56 @@ bool screenchanged = false;
 void loop(void){
 	
 	//declare vars
-	static triangle mytri;
-	static mesh mymesh;
-	static size_t mappoints = 1000;
-	static size_t listedges = 1000;
-	static vec2 pointmap[1000];
-	static link edgelist[1000];
+	static mesh bounds;
+	static vec2 * bp;
+	static double bpc = 5;
+	static vec2 oldpoint;
+	static vec2 newpoint;
+	static int whichvert;
 	//end declare vars
 	
 	if(init){ //init vars
-		setclearcolor(0,0,0);
-		srand(time(0));
-		inittriangle(&mytri, .0, -.5, -.5, .5, .5, .5);
-		settrianglescale(&mytri, .4, .4);
-		settriangletranslate(&mytri, .3, .3);
-		for(int iter = 0; iter < mappoints; iter++){
-			pointmap[iter].x = (double)((rand() % 20000) - 10000) / 10000.0;
-			pointmap[iter].y = (double)((rand() % 20000) - 10000) / 10000.0;
-			edgelist[iter].v1 = rand() % mappoints;
-			edgelist[iter].v2 = rand() % mappoints;
+		bp = (vec2 *)malloc(sizeof(vec2) * bpc);
+		for(double iter = 0; iter < bpc; iter++){
+			setvec2(bp+(int)iter, cos((iter/bpc) * 2.0 * pi), sin((iter/bpc) * 2.0 * pi));
 		}
-		initmesh(&mymesh, pointmap, edgelist, mappoints, listedges);
+		initmesh(&bounds, bp, NULL, bpc, 0);
+		scalemesh(&bounds, .2, .2);
+		setvec2(&oldpoint, (((double)rand() / (double)RAND_MAX)) * 2.0 - 1.0, (((double)rand() / (double)RAND_MAX)) * 2.0 - 1.0);
 	} //end init vars
 	
 	//draw
-	clear();
-	trianglerotate(&mytri, dt * 1.5 * pi);
-	rotate(&globaltransform, dt * .5 * pi);
-	setcolor(255,0,0);drawfilledtriangle(mytri);
-	setcolor(255,255,0);drawlinemesh(mymesh);
-	setcolor(0,0,0);drawpointmesh(mymesh);
+	if(screenchanged){
+		clear();
+	}
+	setcolor(255,0,0);
+	drawpointmesh(bounds);
+	
+	whichvert = rand() % bounds.vertexcount;
+	newpoint.x = bounds.vertex[whichvert].x - oldpoint.x;
+	newpoint.y = bounds.vertex[whichvert].y - oldpoint.y;
+	scalevec2(&newpoint, .5, .5);
+	oldpoint.x += newpoint.x;
+	oldpoint.y += newpoint.y;
+	switch(whichvert % 5){
+		case 0:
+			setcolor(0,255,0);
+			break;
+		case 1:
+			setcolor(255,0,0);
+			break;
+		case 2:
+			setcolor(0,0,255);
+			break;
+		case 3:
+			setcolor(255,0,255);
+			break;
+		case 4:
+			setcolor(255,255,0);
+			break;
+	}
+	drawvec2(oldpoint);
+	
 	flip();
 	//end draw
 	
@@ -91,6 +112,7 @@ int main(int argc, char ** argv){
 		return 1;
 	}
 	
+	srand(time(0));
 	clearcolor = (SDL_Color){.r = 255, .g = 255, .b = 255, .a = 255};
 	clear();
 	setglobaltransform();
@@ -140,7 +162,7 @@ int main(int argc, char ** argv){
 
 void drawvec2(vec2 v){ //renders pixel
 	if(!disableglobal){
-		applypointtransform(globaltransform, &v);
+		applytransformvec2(globaltransform, &v);
 	}	
 	SDL_RenderDrawPoint(renderer, (int)v.x, (int)v.y);
 };
