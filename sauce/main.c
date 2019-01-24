@@ -11,8 +11,8 @@
 #define defaultscreenwidth 640
 #define defaultscreenheight 480
 
-int screenwidth = 1000;
-int screenheight = 800;
+int screenwidth = 800;
+int screenheight = 600;
 int halfscreenwidth;
 int halfscreenheight;
 SDL_Window * window;
@@ -33,6 +33,26 @@ bool disablelocal3d = false;
 bool init = true;
 bool screenchanged = false;
 
+void drawvec2(vec2 v);
+void drawvec3(vec3 v);
+void drawpoint(point p);
+void drawlinevec2(vec2 v1, vec2 v2);
+void drawlinevec3(vec3 v1, vec3 v2);
+void drawpointline(point p1, point p2);
+void drawline(line l);
+void drawvector(line l, bool dir);
+void drawtriangle(triangle t);
+void drawfilledtriangle(triangle t);
+void drawlinemesh(mesh m);
+void drawpointmesh(mesh m);
+void updatemouse(void);
+void setdt(void);
+void setcolor(Uint8 r, Uint8 g, Uint8 b);
+void setcolorwithalpha(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+void setclearcolor(Uint8 r, Uint8 g, Uint8 b);
+void clear(void);
+void flip(void);
+void delay(int s);
 
 void loop(void){
 	
@@ -42,8 +62,10 @@ void loop(void){
 	static vec3 v0;
 	static transform3d t0;
 	static double accum = 0.0;
-	int zt = 40;
-	int xt = 40;
+	static double xcm;
+	static double zcm;
+	int zt = 20;
+	int xt = 20;
 	int iz = 0;
 	int ix = 0;
 	//end declare vars
@@ -57,22 +79,23 @@ void loop(void){
 			for(x = -1.0, ix = 0; ix < xt; x += 2.0/(double)xt, ix++){ //x from -1.0 to 1.0
 				data[ix][iz].x = x;
 				data[ix][iz].z = z;
-				
 			}
 		}
 		
+		xcm = 255.0 / xt;
+		zcm = 255.0 / zt;
 		setclearcolor(0,0,0);
 		srand(time(0));
 		
-		setscale3d(&t0, .6, .1, .6);
+		setscale3d(&t0, .7, .2, .7);
 		settranslate3d(&t0, 0.0, 0.0, 0.0);
-		setrotate3d(&t0, 0.0, 0.0, 0.0);
+		setrotate3d(&t0, 0.3, 0.0, 0.0);
 		
 	} //end init vars
 	
 	//draw
 	clear();
-	rotate3d(&t0, .3 * dt, .2 * dt, .0);
+	rotate3d(&t0, .0, .2 * dt, .0);
 	setcolor(0, 255, 0);
 	accum += dt;
 	accum = fmod(accum, pi2);
@@ -80,8 +103,7 @@ void loop(void){
 		for(ix = 0; ix < xt; ix++){
 			data[ix][iz].y = cos(pi * data[ix][iz].x + accum) * sin(pi * data[ix][iz].z + accum);
 			setvec3(&v1, data[ix][iz].x, data[ix][iz].y, data[ix][iz].z);
-			double color = ((data[ix][iz].z + 1.4) / 2.8) * 240.0;
-			setcolor(0, (Uint8)color, 0);
+			setcolor((Uint8)((double)ix * xcm), (Uint8)((double)iz * zcm), 0);
 			applytransformvec3(t0, &v1);
 			drawvec3(v1);
 			if(ix < xt - 1){
@@ -102,14 +124,6 @@ void loop(void){
 	
 	return;
 }
-
-void drawpoint(point p);
-
-void drawpointline(point p1, point p2);
-
-void drawline(line l);
-
-void drawvector(line l, bool dir);
 
 int main(int argc, char ** argv){
 	
