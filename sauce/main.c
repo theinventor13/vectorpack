@@ -7,6 +7,7 @@
 #include "transform.h"
 #define defaulttransform  1.0, 1.0, 0.0, 0.0, 0.0
 #define pi 3.1415926535
+#define pi2 (3.1415926535 * 2)
 #define defaultscreenwidth 640
 #define defaultscreenheight 480
 
@@ -31,35 +32,39 @@ bool disableglobal3d = false;
 bool disablelocal3d = false;
 bool init = true;
 bool screenchanged = false;
-vec3 data[100][100];
+
 
 void loop(void){
 	
 	//declare vars
-
+	static vec3 data[100][100];
 	static vec3 v1;
 	static vec3 v0;
 	static transform3d t0;
+	static double accum = 0.0;
+	int zt = 40;
+	int xt = 40;
 	int iz = 0;
 	int ix = 0;
 	//end declare vars
 	
 	if(init){ //init vars
+		
 		iz = 0;
-		ix = 0;
-		for(double z = -1.0; iz < 100; z += .02, iz++){ //z from -1.0 to 1.0
-			for(double x = -1.0; ix < 100; x += .02, ix++){ //x from -1.0 to 1.0
-				data[ix][iz].y = x * (x*x - 3*z*z);
+		double z;
+		double x;
+		for(z = -1.0, iz = 0; iz < zt; z += 2.0/(double)zt, iz++){ //z from -1.0 to 1.0
+			for(x = -1.0, ix = 0; ix < xt; x += 2.0/(double)xt, ix++){ //x from -1.0 to 1.0
 				data[ix][iz].x = x;
 				data[ix][iz].z = z;
-				printf("(%f, %f)\n", data[ix][iz].x, data[ix][iz].z);
+				
 			}
 		}
 		
 		setclearcolor(0,0,0);
 		srand(time(0));
 		
-		setscale3d(&t0, .4, .4, .4);
+		setscale3d(&t0, .6, .1, .6);
 		settranslate3d(&t0, 0.0, 0.0, 0.0);
 		setrotate3d(&t0, 0.0, 0.0, 0.0);
 		
@@ -67,20 +72,24 @@ void loop(void){
 	
 	//draw
 	clear();
-	rotate3d(&t0, .3 * dt, .2 * dt, .6 * dt);
+	rotate3d(&t0, .3 * dt, .2 * dt, .0);
 	setcolor(0, 255, 0);
-	for(iz = 0; iz < 100; iz++){
-		for(ix = 0; ix < 100; ix++){
-			
+	accum += dt;
+	accum = fmod(accum, pi2);
+	for(iz = 0; iz < zt; iz++){
+		for(ix = 0; ix < xt; ix++){
+			data[ix][iz].y = cos(pi * data[ix][iz].x + accum) * sin(pi * data[ix][iz].z + accum);
 			setvec3(&v1, data[ix][iz].x, data[ix][iz].y, data[ix][iz].z);
+			double color = ((data[ix][iz].z + 1.4) / 2.8) * 240.0;
+			setcolor(0, (Uint8)color, 0);
 			applytransformvec3(t0, &v1);
 			drawvec3(v1);
-			if(ix < 99){
+			if(ix < xt - 1){
 				setvec3(&v0, data[ix+1][iz].x, data[ix+1][iz].y, data[ix+1][iz].z);
 				applytransformvec3(t0, &v0);
 				drawlinevec3(v1, v0);
 			}
-			if(iz < 99){
+			if(iz < zt - 1){
 				setvec3(&v0, data[ix][iz+1].x, data[ix][iz+1].y, data[ix][iz+1].z);
 				applytransformvec3(t0, &v0);
 				drawlinevec3(v1, v0);
