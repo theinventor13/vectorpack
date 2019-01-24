@@ -9,60 +9,85 @@
 #define pi 3.1415926535
 #define defaultscreenwidth 640
 #define defaultscreenheight 480
-int screenwidth = 640;
-int screenheight = 480;
-int halfscreenwidth = 320;
-int halfscreenheight = 240;
+
+int screenwidth = 1000;
+int screenheight = 800;
+int halfscreenwidth;
+int halfscreenheight;
 SDL_Window * window;
 SDL_Renderer * renderer;
 SDL_Event event;
 SDL_Color clearcolor;
 
 transform globaltransform;
+transform3d globaltransform3d;
 vec2 mouseposition;
 double arrowsize = 10.0;
 double dt = 0.0;
 double screenratio = (double)defaultscreenwidth / (double)defaultscreenheight;
 bool disableglobal = false;
 bool disablelocal = false;
+bool disableglobal3d = false;
+bool disablelocal3d = false;
 bool init = true;
 bool screenchanged = false;
+vec3 data[100][100];
 
-
-#include "loop.h"
 void loop(void){
 	
 	//declare vars
-	static triangle mytri;
-	static mesh mymesh;
-	static size_t mappoints = 1000;
-	static size_t listedges = 1000;
-	static vec2 pointmap[1000];
-	static link edgelist[1000];
+
+	static vec3 v1;
+	static vec3 v0;
+	static transform3d t0;
+	int iz = 0;
+	int ix = 0;
 	//end declare vars
 	
 	if(init){ //init vars
+		iz = 0;
+		ix = 0;
+		for(double z = -1.0; iz < 100; z += .02, iz++){ //z from -1.0 to 1.0
+			for(double x = -1.0; ix < 100; x += .02, ix++){ //x from -1.0 to 1.0
+				data[ix][iz].y = x * (x*x - 3*z*z);
+				data[ix][iz].x = x;
+				data[ix][iz].z = z;
+				printf("(%f, %f)\n", data[ix][iz].x, data[ix][iz].z);
+			}
+		}
+		
 		setclearcolor(0,0,0);
 		srand(time(0));
-		inittriangle(&mytri, .0, -.5, -.5, .5, .5, .5);
-		settrianglescale(&mytri, .4, .4);
-		settriangletranslate(&mytri, .3, .3);
-		for(int iter = 0; iter < mappoints; iter++){
-			pointmap[iter].x = (double)((rand() % 20000) - 10000) / 10000.0;
-			pointmap[iter].y = (double)((rand() % 20000) - 10000) / 10000.0;
-			edgelist[iter].v1 = rand() % mappoints;
-			edgelist[iter].v2 = rand() % mappoints;
-		}
-		initmesh(&mymesh, pointmap, edgelist, mappoints, listedges);
+		
+		setscale3d(&t0, .4, .4, .4);
+		settranslate3d(&t0, 0.0, 0.0, 0.0);
+		setrotate3d(&t0, 0.0, 0.0, 0.0);
+		
 	} //end init vars
 	
 	//draw
 	clear();
-	trianglerotate(&mytri, dt * 1.5 * pi);
-	rotate(&globaltransform, dt * .5 * pi);
-	setcolor(255,0,0);drawfilledtriangle(mytri);
-	setcolor(255,255,0);drawlinemesh(mymesh);
-	setcolor(0,0,0);drawpointmesh(mymesh);
+	rotate3d(&t0, .3 * dt, .2 * dt, .6 * dt);
+	setcolor(0, 255, 0);
+	for(iz = 0; iz < 100; iz++){
+		for(ix = 0; ix < 100; ix++){
+			
+			setvec3(&v1, data[ix][iz].x, data[ix][iz].y, data[ix][iz].z);
+			applytransformvec3(t0, &v1);
+			drawvec3(v1);
+			if(ix < 99){
+				setvec3(&v0, data[ix+1][iz].x, data[ix+1][iz].y, data[ix+1][iz].z);
+				applytransformvec3(t0, &v0);
+				drawlinevec3(v1, v0);
+			}
+			if(iz < 99){
+				setvec3(&v0, data[ix][iz+1].x, data[ix][iz+1].y, data[ix][iz+1].z);
+				applytransformvec3(t0, &v0);
+				drawlinevec3(v1, v0);
+			}
+		}
+	}
+	
 	flip();
 	//end draw
 	
@@ -91,9 +116,12 @@ int main(int argc, char ** argv){
 		return 1;
 	}
 	
+	halfscreenwidth = screenwidth / 2;
+	halfscreenheight = screenheight / 2;
 	clearcolor = (SDL_Color){.r = 255, .g = 255, .b = 255, .a = 255};
 	clear();
 	setglobaltransform();
+	setglobaltransform3d();
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	
 	bool quit = false;
@@ -140,7 +168,14 @@ int main(int argc, char ** argv){
 
 void drawvec2(vec2 v){ //renders pixel
 	if(!disableglobal){
-		applypointtransform(globaltransform, &v);
+		applytransformvec2(globaltransform, &v);
+	}	
+	SDL_RenderDrawPoint(renderer, (int)v.x, (int)v.y);
+};
+
+void drawvec3(vec3 v){ //renders pixel
+	if(!disableglobal3d){
+		applytransformvec3(globaltransform3d, &v);
 	}	
 	SDL_RenderDrawPoint(renderer, (int)v.x, (int)v.y);
 };
@@ -160,6 +195,14 @@ void drawlinevec2(vec2 v1, vec2 v2){ //renders point line
 	if(!disableglobal){
 		applytransformvec2(globaltransform, &v1);
 		applytransformvec2(globaltransform, &v2);
+	}
+	SDL_RenderDrawLine(renderer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y);
+};
+
+void drawlinevec3(vec3 v1, vec3 v2){ //renders point line
+	if(!disableglobal3d){
+		applytransformvec3(globaltransform3d, &v1);
+		applytransformvec3(globaltransform3d, &v2);
 	}
 	SDL_RenderDrawLine(renderer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y);
 };

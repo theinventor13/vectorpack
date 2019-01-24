@@ -1,4 +1,5 @@
 extern transform globaltransform;
+extern transform3d globaltransform3d;
 extern int screenwidth;
 extern int screenheight;
 extern int halfscreenwidth;
@@ -41,6 +42,19 @@ void setglobaltransform(void){
 	setrotate(&globaltransform, 0.0);
 }
 
+void setglobaltransform3d(void){
+	
+	settranslate3d(&globaltransform3d, (double)halfscreenwidth, (double)halfscreenheight, 0.0);
+	
+	if(screenwidth > screenheight){
+		setscale3d(&globaltransform3d, (double)(halfscreenwidth), (double)(-halfscreenwidth), 1.0);
+	}else{
+		setscale3d(&globaltransform3d, (double)(halfscreenheight), (double)(-halfscreenheight), 1.0);
+	}
+		
+	setrotate3d(&globaltransform, 0.0, 0.0, 0.0);
+}
+
 double wraprotate(double a){
 	if(a > (pi * 2.0) || a < -(pi * 2.0)){
 		return fmod(a, pi * 2.0);
@@ -56,7 +70,7 @@ void swapvec2(vec2 * v1, vec2 * v2){
 	*v2 = temp;
 }
 
-//general transform functions
+//general 2d transform functions
 
 void setscale(transform * t, double dx, double dy){
 	t->scale.x = dx;
@@ -88,6 +102,47 @@ void rotate(transform * t, double a){
 	t->rotate = wraprotate(t->rotate);
 }
 
+//general 3d transform functions
+
+void setscale3d(transform3d * t, double dx, double dy, double dz){
+	t->scale.x = dx;
+	t->scale.y = dy;
+	t->scale.z = dz;
+}
+
+void scale3d(transform3d * t, double dx, double dy, double dz){
+	t->scale.x *= dx;
+	t->scale.y *= dy;
+	t->scale.z *= dz;
+}
+
+void settranslate3d(transform3d * t, double dx, double dy, double dz){
+	t->translate.x = dx;
+	t->translate.y = dy;
+	t->translate.z = dz;
+}
+
+
+void translate3d(transform3d * t, double dx, double dy, double dz){
+	t->translate.x += dx;
+	t->translate.y += dy;
+	t->translate.z += dz;
+}
+
+void setrotate3d(transform3d * t, double ax, double ay, double az){
+	t->rotate.x = wraprotate(ax);
+	t->rotate.y = wraprotate(ay);
+	t->rotate.z = wraprotate(az);
+}
+
+void rotate3d(transform3d * t, double ax, double ay, double az){
+	t->rotate.x += ax;
+	t->rotate.x = wraprotate(t->rotate.x);
+	t->rotate.y += ay;
+	t->rotate.y = wraprotate(t->rotate.y);
+	t->rotate.z += az;
+	t->rotate.z = wraprotate(t->rotate.z);
+}
 
 //vec2 transform functions
 
@@ -128,6 +183,64 @@ void rotatevec2(vec2 * v, double a){
 	v->y = newy;
 }
 
+//vec3 transform functions
+
+void setvec3(vec3 * v, double x, double y, double z){
+	v->x = x;
+	v->y = y;
+	v->z = z;	
+}
+
+void applytransformvec3(transform3d t, vec3 * v){
+	v->x *= t.scale.x;
+	v->y *= t.scale.y;
+	v->z *= t.scale.z;
+	
+	double nwx  = cos(t.rotate.z) * v->x - sin(t.rotate.z) * v->y;
+	double nwy  = sin(t.rotate.z) * v->x + cos(t.rotate.z) * v->y;
+	double newy = cos(t.rotate.x) * nwy  - sin(t.rotate.x) * v->z;
+	double nwz  = sin(t.rotate.x) * nwy  + cos(t.rotate.x) * v->z;
+	double newx = cos(t.rotate.y) * nwx  - sin(t.rotate.y) * nwz;
+	double newz = sin(t.rotate.y) * nwx  + cos(t.rotate.y) * nwz;
+	
+	v->x = newx + t.translate.x;
+	v->y = newy + t.translate.y;
+	v->z = newz + t.translate.z;	
+}
+
+void normalizevec3(vec3 * v){
+	
+	double mag = sqrt(v->x * v->x + v->y * v->y + v->z * v->z);
+	v->x /= mag;
+	v->y /= mag;
+	v->z /= mag;
+	
+}
+
+void scalevec3(vec3 * v, double dx, double dy, double dz){
+	v->x *= dx;
+	v->y *= dy;
+	v->z *= dz;
+}
+
+void translatevec3(vec3 * v, double dx, double dy, double dz){
+	v->x += dx;
+	v->y += dy;
+	v->z += dz;
+}
+
+void rotatevec3(vec3 * v, double ax, double ay, double az){
+	double nwx = cos(az) * v->x - sin(az) * v->y;
+	double nwy = sin(az) * v->x + cos(az) * v->y;
+	double newy = cos(ax) * nwy - sin(ax) * v->z;
+	double nwz = sin(ax) * nwy + cos(ax) * v->z;
+	double newx = cos(ay) * nwx - sin(ay) * nwz;
+	double newz = sin(ay) * nwx + cos(ay) * nwz;
+	
+	v->x = newx;
+	v->y = newy;
+	v->z = newz;
+}
 
 //point transform functions
 

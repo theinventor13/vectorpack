@@ -48,7 +48,7 @@ typedef struct{ //2d mesh with texture coordinates
 	size_t edgecount;
 }uvmesh;
 
-typedef struct{ //2d vector
+typedef struct{ //3d vector
 	double x;
 	double y;
 	double z;
